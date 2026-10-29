@@ -1,0 +1,43 @@
+name: Deploy Demo to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout published Demo artifacts
+        uses: actions/checkout@v6
+      - name: Extract and verify static Demo
+        run: |
+          mkdir -p site
+          for archive in demo-assets-*.zip; do unzip -q "$archive" -d site; done
+          test -s site/index.html
+          test -s site/404.html
+          test -s site/mockServiceWorker.js
+          test -d site/assets
+          test -d site/images
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Upload static site
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+      - name: Deploy Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
